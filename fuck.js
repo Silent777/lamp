@@ -1,116 +1,86 @@
 (function () {
     'use strict';
 
-    /* =========================
-       MANIFEST
-    ========================= */
-    var manifest = {
-        id: 'ua_plugin',
-        name: 'UA Дивитись',
-        version: '1.0.0',
-        description: 'Українські джерела перегляду',
-        author: 'UA Plugin',
-        type: 'plugin'
-    };
+    var BUTTON_CLASS = 'ua-card-button';
 
     /* =========================
-       MAIN COMPONENT
+       ADD BUTTON TO CARD
     ========================= */
-    function UAMain() {
-        var html = $('<div class="ua-plugin"></div>');
-        var scroll = new Lampa.Scroll({ mask: true });
-        var items = $('<div class="ua-plugin__list"></div>');
+    function addButton(activity) {
+        if (!activity || !activity.render) return;
 
-        this.create = function () {
-            scroll.append(items);
+        var buttons = activity.render().find('.full-start-new__buttons');
 
-            addItem('🔎 Шукати українською', function () {
-                var activity = Lampa.Activity.active();
-                var title = activity && activity.movie
-                    ? activity.movie.title || activity.movie.name
-                    : '';
+        if (!buttons.length) return;
+        if (buttons.find('.' + BUTTON_CLASS).length) return;
 
-                if (!title) {
-                    Lampa.Noty.show('Немає назви');
-                    return;
-                }
+        var btn = $(`
+            <div class="full-start__button selector ${BUTTON_CLASS}"
+                 style="background: rgba(255, 215, 0, 0.25)">
+                <svg width="24" height="24" viewBox="0 0 24 24">
+                    <path d="M12 2L4.5 20.3L5.2 21L12 18L18.8 21L19.5 20.3Z"
+                          fill="gold"/>
+                </svg>
+                <span>UA</span>
+            </div>
+        `);
 
-                Lampa.Noty.show('Шукаю: ' + title);
-                window.open(
-                    'https://toloka.to/tracker.php?nm=' +
-                        encodeURIComponent(title),
-                    '_blank'
-                );
-            });
+        btn.on('hover:enter', function () {
+            var movie = activity.movie;
+            var title =
+                movie.title ||
+                movie.name ||
+                movie.original_title ||
+                movie.original_name;
 
-            addItem('ℹ️ Про плагін', function () {
-                Lampa.Noty.show('UA Plugin · v' + manifest.version);
-            });
+            if (!title) {
+                Lampa.Noty.show('Немає назви');
+                return;
+            }
 
-            html.append(scroll.render());
-            return html;
-        };
+            Lampa.Noty.show('Шукаю українською: ' + title);
 
-        this.start = function () {
-            scroll.focus();
-        };
+            window.open(
+                'https://toloka.to/tracker.php?nm=' +
+                    encodeURIComponent(title),
+                '_blank'
+            );
+        });
 
-        function addItem(title, onEnter) {
-            var item = $(`
-                <div class="ua-plugin__item selector">
-                    <div class="ua-plugin__title">${title}</div>
-                </div>
-            `);
+        buttons.append(btn);
 
-            item.on('hover:enter', onEnter);
-            items.append(item);
-        }
+        if (Lampa.Controller) Lampa.Controller.render();
     }
 
     /* =========================
-       REGISTER COMPONENT
+       LISTEN FULL CARD OPEN
     ========================= */
-    Lampa.Component.add('ua_plugin_main', UAMain);
+    function bind() {
+        Lampa.Listener.follow('activity', function (e) {
+            if (e.type !== 'start') return;
+            if (!e.activity) return;
 
-    /* =========================
-       MENU BUTTON (SaloPower style)
-    ========================= */
-    function addMenuButton() {
-        if ($('.menu__item.ua-plugin-button').length) return;
-
-        var button = $(`
-            <li class="menu__item selector ua-plugin-button">
-                <div class="menu__ico">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 2L2 7v10l10 5 10-5V7z"></path>
-                    </svg>
-                </div>
-                <div class="menu__text">${manifest.name}</div>
-            </li>
-        `);
-
-        button.on('hover:enter', function () {
-            Lampa.Activity.push({
-                component: 'ua_plugin_main',
-                title: manifest.name
-            });
+            // ці компоненти мають full-start
+            if (
+                e.activity.component === 'full' ||
+                e.activity.component === 'movie' ||
+                e.activity.component === 'tv'
+            ) {
+                // даємо DOM дорендеритись
+                setTimeout(function () {
+                    addButton(e.activity);
+                }, 0);
+            }
         });
-
-        $('.menu .menu__list').eq(0).append(button);
     }
 
     /* =========================
        START
     ========================= */
-    function start() {
-        addMenuButton();
-        console.log('UA Plugin loaded');
-    }
-
-    if (window.appready) start();
+    if (window.appready) bind();
     else {
         Lampa.Listener.follow('app', function (e) {
-            if (e.type === 'ready') start();
+            if (e.type === 'ready') bind();
         });
     }
 })();
