@@ -28,4 +28,8 @@
     }
 
     Lampa.Listener.follow('activity', e => {
-        if (
+        if (e.type === 'start' && e.object?.component === 'full') {
+            setTimeout(injectButton, 200);
+        }
+    });
+})();
