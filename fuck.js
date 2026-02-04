@@ -2,48 +2,36 @@
     'use strict';
 
     function startPlugin() {
-        // 1. Створюємо компонент (те, що відкриється при натисканні)
+        // Реєструємо компонент
         Lampa.Component.add('my_plugin', function (object) {
-            var network = new Lampa.Reguest(); // Для майбутніх запитів
-            var scroll  = new Lampa.Scroll({mask:true,over:true});
-            var items   = [];
-            var html    = $('<div></div>');
-
+            var comp = new Lampa.Interaction();
             this.create = function () {
-                var container = $('<div class="category-full"></div>');
-                var text = $('<div style="padding: 20px; text-align: center;"><h1>Слава Україні! 🇺🇦</h1><p>Ваш плагін активовано.</p></div>');
-                
-                container.append(text);
-                html.append(scroll.render());
-                scroll.append(container);
-                
-                return html;
+                this.dom = $('<div><h1 style="text-align:center; margin-top:100px;">UA Plugin v3</h1><p style="text-align:center;">Якщо ви це бачите — ви перемогли кеш!</p></div>');
+                return this.dom;
             };
-
-            this.render = function () {
-                return this.create();
-            };
-
-            this.terminate = function () {};
+            this.render = function () { return this.create(); };
+            this.terminate = function () { this.dom.remove(); };
         });
 
-        // 2. Додаємо в меню з чітким вказанням місця
-        Lampa.Menu.add({
-            id: 'my_ua_plugin',
-            title: 'Мій UA Контент',
-            icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z" fill="white"/></svg>',
-            onSelect: function () {
-                Lampa.Activity.push({
-                    url: '',
-                    title: 'Мій UA Контент',
-                    component: 'my_plugin',
-                    page: 1
-                });
-            }
-        }, 'animes'); // Ми кажемо Лампі поставити ваш пункт ПІСЛЯ розділу "Аніме"
+        // Додаємо в меню через невелику паузу
+        setTimeout(function(){
+            Lampa.Menu.add({
+                id: 'my_ua_plugin',
+                title: 'Мій UA Контент',
+                icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>',
+                onSelect: function () {
+                    Lampa.Activity.push({
+                        url: '',
+                        title: 'Мій UA Контент',
+                        component: 'my_plugin',
+                        page: 1
+                    });
+                }
+            });
+        }, 100); 
     }
 
-    // Очікування готовності системи
+    // Більш надійний спосіб перевірки готовності
     if (window.appready) startPlugin();
     else {
         Lampa.Listener.follow('app', function (e) {
