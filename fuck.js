@@ -1,23 +1,9 @@
-(function() {
+(function () {
     'use strict';
 
     var BUTTON_CLASS = 'ua-card-button';
 
-    function addButton(activity) {
-        if (!activity) return;
-
-        var root = activity.render(true); // render(true) гарантує повний DOM
-        if (!root || !root.length) return;
-
-        var buttons = root.find('.full-start-new__buttons');
-        if (!buttons.length) {
-            // якщо кнопки ще нема, спробуємо через 300мс
-            setTimeout(() => addButton(activity), 300);
-            return;
-        }
-
-        if (buttons.find('.' + BUTTON_CLASS).length) return;
-
+    function createButton(title) {
         var btn = $(`
             <div class="full-start__button selector ${BUTTON_CLASS}" style="background: rgba(255, 215, 0, 0.25)">
                 <svg width="24" height="24" viewBox="0 0 24 24">
@@ -27,10 +13,7 @@
             </div>
         `);
 
-        // тестовий клік, бо hover:enter може не спрацювати
-        btn.on('click', function() {
-            var movie = activity.movie || {};
-            var title = movie.title || movie.name || movie.original_title || movie.original_name;
+        btn.on('hover:enter', function () {
             if (!title) {
                 Lampa.Noty.show('Немає назви');
                 return;
@@ -39,23 +22,49 @@
             window.open('https://toloka.to/tracker.php?nm=' + encodeURIComponent(title), '_blank');
         });
 
-        buttons.append(btn);
+        return btn;
+    }
 
-        if (Lampa.Controller) {
-            Lampa.Controller.render();
-        }
+    function addButtonToCard(activity) {
+        var root = activity.render(true);
+        if (!root || !root.length) return;
+
+        var buttons = root.find('.full-start-new__buttons');
+        if (!buttons.length) return;
+
+        if (buttons.find('.' + BUTTON_CLASS).length) return;
+
+        var movie = activity.movie || {};
+        var title = movie.title || movie.name || movie.original_title || movie.original_name;
+
+        buttons.append(createButton(title));
+
+        if (Lampa.Controller) Lampa.Controller.render();
     }
 
     function bind() {
-        Lampa.Listener.follow('full_start', function(e) {
+        Lampa.Listener.follow('full_start', function (e) {
             if (!e || !e.activity) return;
-            addButton(e.activity);
+
+            // Використовуємо MutationObserver, щоб чекати, коли DOM кнопок реально зʼявиться
+            var root = e.activity.render(true);
+            if (!root || !root.length) return;
+
+            var observer = new MutationObserver(function (mutations, obs) {
+                var buttons = root.find('.full-start-new__buttons');
+                if (buttons.length) {
+                    addButtonToCard(e.activity);
+                    obs.disconnect(); // зупиняємо спостереження
+                }
+            });
+
+            observer.observe(root[0], { childList: true, subtree: true });
         });
     }
 
     if (window.appready) bind();
     else {
-        Lampa.Listener.follow('app', function(e) {
+        Lampa.Listener.follow('app', function (e) {
             if (e.type === 'ready') bind();
         });
     }
