@@ -1,52 +1,48 @@
-function addUaButton(activity) {
-    var BUTTON_CLASS = 'ua-card-button';
+(function() {
+    'use strict';
 
-    var createButton = function(title) {
+    // Функція створення нашої кнопки
+    function createMyButton() {
         var btn = $(`
-            <div class="full-start__button selector ${BUTTON_CLASS}" style="background: rgba(255, 215, 0, 0.25)">
-                <svg width="24" height="24" viewBox="0 0 24 24">
-                    <path d="M12 2L4.5 20.3L5.2 21L12 18L18.8 21L19.5 20.3Z" fill="gold"/>
+            <div class="button full-start__button selector my-ua-button" style="background: rgba(255, 215, 0, 0.2) !important;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z" fill="gold"/>
                 </svg>
-                <span>UA</span>
+                <span>Дивитись UA</span>
             </div>
         `);
 
         btn.on('hover:enter', function() {
-            if (!title) {
-                Lampa.Noty.show('Немає назви');
-                return;
-            }
-            Lampa.Noty.show('Шукаю українською: ' + title);
+            var title = $('.full-start__title').text() || $('title').text();
+            Lampa.Noty.show('Шукаю солов\'їною для: ' + title);
             window.open('https://toloka.to/tracker.php?nm=' + encodeURIComponent(title), '_blank');
         });
 
         return btn;
-    };
+    }
 
-    // Спостерігаємо за появою кнопок
-    var root = activity.render(true);
-    if (!root || !root.length) return;
+    // Стежимо за зміною активності (як у вашому прикладі)
+    Lampa.Storage.listener.follow("change", function(e) {
+        if (e.name == "activity") {
+            // Коли відкривається картка фільму (компонент 'full' або 'vod')
+            var timer = setInterval(function() {
+                var container = $(".full-start__buttons");
+                
+                // Якщо знайшли блок кнопок і нашої кнопки там ще нема
+                if (container.length > 0) {
+                    if (!$(".my-ua-button").length) {
+                        container.append(createMyButton());
+                        // Обов'язково оновлюємо навігацію
+                        if (Lampa.Controller) Lampa.Controller.render();
+                    }
+                    clearInterval(timer); // Зупиняємо пошук, коли додали
+                }
+            }, 100);
 
-    var observer = new MutationObserver(function(mutations, obs) {
-        var buttons = root.find('.full-start-new__buttons');
-        if (buttons.length) {
-            var movie = activity.movie || {};
-            var title = movie.title || movie.name || movie.original_title || movie.original_name;
-
-            if (!buttons.find('.' + BUTTON_CLASS).length) {
-                buttons.append(createButton(title));
-            }
-
-            if (Lampa.Controller) Lampa.Controller.render();
-            obs.disconnect();
+            // Обмежуємо час пошуку (наприклад, 5 секунд), щоб не вантажити систему
+            setTimeout(function() { clearInterval(timer); }, 5000);
         }
     });
 
-    observer.observe(root[0], { childList: true, subtree: true });
-}
-
-// Підключаємо до listener full_start
-Lampa.Listener.follow('full_start', function(e) {
-    if (!e || !e.activity) return;
-    addUaButton(e.activity);
-});
+    console.log('UA Plugin: Monitoring started via Storage listener');
+})();
