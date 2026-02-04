@@ -1,48 +1,62 @@
-(function () {
+(function() {
     'use strict';
 
-    function startPlugin() {
-        // Слухаємо подію завантаження повної інформації про фільм
-        Lampa.Listener.follow('full', function (e) {
-            if (e.type == 'complite') {
-                // У веб-версії e.object може бути не jQuery об'єктом, 
-                // тому шукаємо контейнер кнопок через глобальний селектор всередині поточної сторінки
-                var page = $('.full-start'); 
-                var container = page.find('.full-start__buttons');
-                
-                if (container.length && !container.find('.my-ua-button').length) {
-                    // Створюємо кнопку
-                    var btn = $(`
-                        <div class="button full-start__button selector my-ua-button">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z" fill="gold"/>
-                            </svg>
-                            <span>Дивитись UA</span>
-                        </div>
-                    `);
+    var BUTTON_CLASS = 'ua-card-button';
 
-                    // Логіка натискання
-                    btn.on('hover:enter', function () {
-                        var title = e.data.movie.title || e.data.movie.name;
-                        Lampa.Noty.show('Шукаю солов\'їною: ' + title);
-                        window.open('https://toloka.to/tracker.php?nm=' + encodeURIComponent(title), '_blank');
-                    });
+    function addButton(activity) {
+        if (!activity) return;
 
-                    // Додаємо кнопку
-                    container.append(btn);
-                    
-                    // Оновлюємо контролер навігації (важливо для пульта/клавіатури)
-                    if (Lampa.Controller) Lampa.Controller.render();
-                }
+        var root = activity.render(true); // render(true) гарантує повний DOM
+        if (!root || !root.length) return;
+
+        var buttons = root.find('.full-start-new__buttons');
+        if (!buttons.length) {
+            // якщо кнопки ще нема, спробуємо через 300мс
+            setTimeout(() => addButton(activity), 300);
+            return;
+        }
+
+        if (buttons.find('.' + BUTTON_CLASS).length) return;
+
+        var btn = $(`
+            <div class="full-start__button selector ${BUTTON_CLASS}" style="background: rgba(255, 215, 0, 0.25)">
+                <svg width="24" height="24" viewBox="0 0 24 24">
+                    <path d="M12 2L4.5 20.3L5.2 21L12 18L18.8 21L19.5 20.3Z" fill="gold"/>
+                </svg>
+                <span>UA</span>
+            </div>
+        `);
+
+        // тестовий клік, бо hover:enter може не спрацювати
+        btn.on('click', function() {
+            var movie = activity.movie || {};
+            var title = movie.title || movie.name || movie.original_title || movie.original_name;
+            if (!title) {
+                Lampa.Noty.show('Немає назви');
+                return;
             }
+            Lampa.Noty.show('Шукаю українською: ' + title);
+            window.open('https://toloka.to/tracker.php?nm=' + encodeURIComponent(title), '_blank');
+        });
+
+        buttons.append(btn);
+
+        if (Lampa.Controller) {
+            Lampa.Controller.render();
+        }
+    }
+
+    function bind() {
+        Lampa.Listener.follow('full_start', function(e) {
+            if (!e || !e.activity) return;
+            addButton(e.activity);
         });
     }
 
-    // Стандартна ініціалізація як у SaloPower
-    if (window.appready) startPlugin();
+    if (window.appready) bind();
     else {
-        Lampa.Listener.follow('app', function (e) {
-            if (e.type == 'ready') startPlugin();
+        Lampa.Listener.follow('app', function(e) {
+            if (e.type === 'ready') bind();
         });
     }
 })();
