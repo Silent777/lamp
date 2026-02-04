@@ -2,41 +2,48 @@
     'use strict';
 
     function startPlugin() {
-        // 1. Створюємо логіку того, що буде всередині сторінки
+        // 1. Створюємо компонент (те, що відкриється при натисканні)
         Lampa.Component.add('my_plugin', function (object) {
-            var comp = new Lampa.Interaction();
+            var network = new Lampa.Reguest(); // Для майбутніх запитів
+            var scroll  = new Lampa.Scroll({mask:true,over:true});
+            var items   = [];
+            var html    = $('<div></div>');
 
             this.create = function () {
-                // Створюємо простий блок з текстом
-                this.dom = $('<div><h1 style="text-align:center; margin-top:100px;">Слава Україні! 🇺🇦</h1><p style="text-align:center;">Ваш плагін успішно працює.</p></div>');
-                return this.dom;
+                var container = $('<div class="category-full"></div>');
+                var text = $('<div style="padding: 20px; text-align: center;"><h1>Слава Україні! 🇺🇦</h1><p>Ваш плагін активовано.</p></div>');
+                
+                container.append(text);
+                html.append(scroll.render());
+                scroll.append(container);
+                
+                return html;
             };
 
             this.render = function () {
                 return this.create();
             };
 
-            this.terminate = function () {
-                this.dom.remove();
-            };
+            this.terminate = function () {};
         });
 
-        // 2. Додаємо пункт у меню з параметрами відображення
+        // 2. Додаємо в меню з чітким вказанням місця
         Lampa.Menu.add({
-            id: 'my_plugin_menu',
+            id: 'my_ua_plugin',
             title: 'Мій UA Контент',
-            icon: `<svg height="36" viewBox="0 0 24 24" width="36" xmlns="http://www.w3.org/2000/svg"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5z" fill="white"/></svg>`,
+            icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z" fill="white"/></svg>',
             onSelect: function () {
                 Lampa.Activity.push({
                     url: '',
                     title: 'Мій UA Контент',
-                    component: 'my_plugin', // назва компонента, який ми створили вище
+                    component: 'my_plugin',
                     page: 1
                 });
             }
-        });
+        }, 'animes'); // Ми кажемо Лампі поставити ваш пункт ПІСЛЯ розділу "Аніме"
     }
 
+    // Очікування готовності системи
     if (window.appready) startPlugin();
     else {
         Lampa.Listener.follow('app', function (e) {
