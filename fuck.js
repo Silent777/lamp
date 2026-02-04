@@ -1,30 +1,31 @@
 (function () {
     'use strict';
 
-    function inject() {
-        const buttons = $('.full-start .buttons, .full-start__buttons');
+    function injectButton() {
+        const container = $('.full-start-new__buttons');
 
-        if (!buttons.length) return;
-        if (buttons.find('.my-ua-button').length) return;
+        if (!container.length) return;
+        if (container.find('.my-ua-button').length) return;
 
         const btn = $(`
-            <div class="button my-ua-button">
+            <div class="full-start__button my-ua-button">
                 <span>🇺🇦 Дивитись UA</span>
             </div>
         `);
 
         btn.on('click', () => {
-            const title = $('.full-start__title').text();
+            const title = $('.full-start-new__title').text();
             Lampa.Noty.show('UA пошук: ' + title);
+
+            window.open(
+                'https://toloka.to/tracker.php?nm=' + encodeURIComponent(title),
+                '_blank'
+            );
         });
 
-        buttons.append(btn);
-        console.log('[UA] button injected');
+        container.append(btn);
+        console.log('[UA] button added');
     }
 
     Lampa.Listener.follow('activity', e => {
-        if (e.type === 'start' && e.object?.component === 'full') {
-            setTimeout(inject, 300);
-        }
-    });
-})();
+        if (
