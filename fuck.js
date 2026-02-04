@@ -3,15 +3,15 @@
 
     var BUTTON_CLASS = 'ua-card-button';
 
-    /* =========================
-       ADD BUTTON TO CARD
-    ========================= */
     function addButton(activity) {
-        if (!activity || !activity.render) return;
+        if (!activity) return;
 
-        var buttons = activity.render().find('.full-start-new__buttons');
+        var root = activity.render();
+        if (!root || !root.length) return;
 
+        var buttons = root.find('.full-start-new__buttons');
         if (!buttons.length) return;
+
         if (buttons.find('.' + BUTTON_CLASS).length) return;
 
         var btn = $(`
@@ -26,7 +26,7 @@
         `);
 
         btn.on('hover:enter', function () {
-            var movie = activity.movie;
+            var movie = activity.movie || {};
             var title =
                 movie.title ||
                 movie.name ||
@@ -49,34 +49,19 @@
 
         buttons.append(btn);
 
-        if (Lampa.Controller) Lampa.Controller.render();
+        if (Lampa.Controller) {
+            Lampa.Controller.render();
+        }
     }
 
-    /* =========================
-       LISTEN FULL CARD OPEN
-    ========================= */
     function bind() {
-        Lampa.Listener.follow('activity', function (e) {
-            if (e.type !== 'start') return;
-            if (!e.activity) return;
-
-            // ці компоненти мають full-start
-            if (
-                e.activity.component === 'full' ||
-                e.activity.component === 'movie' ||
-                e.activity.component === 'tv'
-            ) {
-                // даємо DOM дорендеритись
-                setTimeout(function () {
-                    addButton(e.activity);
-                }, 0);
-            }
+        // ГОЛОВНЕ: full_start
+        Lampa.Listener.follow('full_start', function (e) {
+            if (!e || !e.activity) return;
+            addButton(e.activity);
         });
     }
 
-    /* =========================
-       START
-    ========================= */
     if (window.appready) bind();
     else {
         Lampa.Listener.follow('app', function (e) {
